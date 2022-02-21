@@ -80,33 +80,61 @@ function saveNovoProizvodstvo(){
                              kolichestvoNeobhodimaSurovinaZaProizvodstvoEdinBroi,
                              broiProizvedenProdukt,
                              kolichestvoNeobhodimaSurovinaZaProizvodstvo,
-                             kolichestvoPartida1]);
+                             kolichestvoNeobhodimaSurovinaZaProizvodstvo]);
     }else{ 
         //ако не стига първа партида
         //ако не стига, запаметява количеството от тази партида!!!!! в таблица ПРОИЗВОДСТВО
-        //запаметява данните в масив производство
+        //запаметява данните в масив производство от 1 партида
         proizvodstvoData.push([proizvedenProdukt,
                               tekushtaSurovinaIme,
                               partida1,
                               kolichestvoNeobhodimaSurovinaZaProizvodstvoEdinBroi,
                               broiProizvedenProdukt,
                               kolichestvoNeobhodimaSurovinaZaProizvodstvo,
-                              kolichestvoNeobhodimaSurovinaZaProizvodstvo]);
+                              kolichestvoPartida1]);
 
         //проверява дали първа + втора партида стигат
         if( (kolichestvoPartida1+kolichestvoPartida2) > kolichestvoNeobhodimaSurovinaZaProizvodstvo ){
           //ако двете партиди стигат
           //и добавя разликата от втората партида
+          //тук запаметява необходимата втора партида ако тя стига
+          razlikaNeobhodimoKol = kolichestvoNeobhodimaSurovinaZaProizvodstvo - kolichestvoPartida1;
+          proizvodstvoData.push([proizvedenProdukt,
+                                tekushtaSurovinaIme,
+                                partida2,
+                                kolichestvoNeobhodimaSurovinaZaProizvodstvoEdinBroi,
+                                broiProizvedenProdukt,
+                                kolichestvoNeobhodimaSurovinaZaProizvodstvo,
+                                razlikaNeobhodimoKol]);
 
         }else{
-          //ако и двете първи партиди не стигат - проверяваме и заедно с третата
-          if( (kolichestvoPartida1+kolichestvoPartida2) > kolichestvoNeobhodimaSurovinaZaProizvodstvo ){
-
-          }
-        }
-    }
+          //ако и двете първи партиди не стигат - 
+          //първо запаметяваме цялата втора партида
+          proizvodstvoData.push([proizvedenProdukt,
+                                tekushtaSurovinaIme,
+                                partida2,
+                                kolichestvoNeobhodimaSurovinaZaProizvodstvoEdinBroi,
+                                broiProizvedenProdukt,
+                                kolichestvoNeobhodimaSurovinaZaProizvodstvo,
+                                kolichestvoPartida2]);
+          //проверяваме и заедно с третата 
+          if( (kolichestvoPartida1+kolichestvoPartida2+kolichestvoPartida3) > kolichestvoNeobhodimaSurovinaZaProizvodstvo ){
+            //ако третата партида ще стигне
+            razlikaNeobhodimoKol2 = kolichestvoNeobhodimaSurovinaZaProizvodstvo - (kolichestvoPartida1+kolichestvoPartida2);
+            //запаметяваме колкото е необходимо (разликата) като партида 3
+            proizvodstvoData.push([proizvedenProdukt,
+                                  tekushtaSurovinaIme,
+                                  partida2,
+                                  kolichestvoNeobhodimaSurovinaZaProizvodstvoEdinBroi,
+                                  broiProizvedenProdukt,
+                                  kolichestvoNeobhodimaSurovinaZaProizvodstvo,
+                                  razlikaNeobhodimoKol2]);
+          } //проверка за трета партида
+        } //проверка втора
+    } //проверка дали първа партида не стига
 
     //запаметява всичко в таблица ПРОИЗВОДСТВО
+    finalSaveProizvodstvoArray(proizvodstvoData);
 
     } //ако реда е след първи (от втори нататък)
     count++;
@@ -115,9 +143,72 @@ function saveNovoProizvodstvo(){
 
 /**
  * запаметява готовия масив за таблица ПРОИЗВОДСТВО
+ * масива е всеки елемент съдържа по един ред с масив инфо за реда
+ *  //структура масив:
+ *  //0 - Произведен продукт,
+ *  //1 - Суровина име	
+ *  //2 - Суровина партида	
+ *  //3 - Суровина количество 1 бр	
+ *  //4 - Произведени бройки	 
+ *  //5 - общо кол по бр	
+ *  //6 - Суровина използвано количество от тази партида
  */
 function finalSaveProizvodstvoArray(proizvodstvoArray){
 
+  //трябва ни дата
+  currentDate = Utilities.formatDate(new Date(), "GMT+2", "dd.MM.yyyy");
+  //Logger.log(proizvodstvoArray);
+  //цикъл въртим масива
+  for( a in proizvodstvoArray ){
+
+      //взимаме масив от таблицата на досегашните производства - 
+      //поредния номер е в колонка А
+      var colArray = sheetProizvodstvo.getRange("A2:A"+sheetProizvodstvo.getLastRow()).getValues();
+      //взимаме последното число (партида)
+      var maxInColumn = colArray.sort(function(a,b){return b-a})[0][0];
+      //увеличаваме с 1 за да създадем нов номер на ред за таблица производство
+      maxInColumn++
+
+      //подготвяме нов масив, който ще е ред за запис в таблица ПРОИЗВОДСТВО
+      //Пореден номер	
+      //Дата	
+      //Произведен продукт	
+      proizvedenProdukt = proizvodstvoArray[a][0];
+      //Суровина име	
+      surovinaIme = proizvodstvoArray[a][1];
+      //Суровина партида	
+      surovinaPartida = proizvodstvoArray[a][2];
+      //Суровина количество 1 бр	
+      surovinaKolichestvo1br = proizvodstvoArray[a][3];
+      //Произведени бройки	
+      proizvedeniBroiki =  proizvodstvoArray[a][4];
+      //общо кол по бр	
+      obshtoKolichestvoPoBroi = proizvodstvoArray[a][5];
+      //Суровина използвано количество от тази партида
+      kolichestvoSurovinaOtTaziPartida = proizvodstvoArray[a][5];
+
+      rowInProizvodstvo = [
+        maxInColumn,
+        currentDate,
+        proizvedenProdukt,
+        surovinaIme,
+        surovinaPartida,
+        surovinaKolichestvo1br,
+        proizvedeniBroiki,
+        obshtoKolichestvoPoBroi,
+        kolichestvoSurovinaOtTaziPartida
+      ];
+
+      //Logger.log(rowInProizvodstvo);
+
+      //добавяме масива с доставката като нов ред
+      sheetProizvodstvo.appendRow(rowInProizvodstvo);
+  } //цикъл нов ред производство
+
+  //изтриваме старите данни от формата за ново производство
+  cleanFormNovoProizvodstvo();
+
+  return true;
 }
 
 /**
